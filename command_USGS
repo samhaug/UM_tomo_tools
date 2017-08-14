@@ -1,1 +1,0 @@
-obspyDMT --datapath test --event_based --min_date 2007-01-01 --max_date 2009-01-01 --min_depth 300 --max_depth 700 --preset 0  --offset 3600  --instrument_correction --waveform_format sac --event_catalog ISC --min_mag 6.6 --max_mag 7.0 --net 'BL,BR,XC' --cha '*' --loc '*'
