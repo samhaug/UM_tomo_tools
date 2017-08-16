@@ -6,9 +6,9 @@
 #
 #
 
-datapath=2015
-min_date=2015-01-01
-max_date=2016-01-01
+datapath=$1
+min_date=$datapath-01-01
+max_date=$(($datapath+1))-01-01
 min_depth=10
 max_depth=700
 cut_time_phase='P'
@@ -21,7 +21,6 @@ max_mag='7.0'
 cha='BH*'
 min_epi=30
 max_epi=170
-
 
 
 MY_CMD="obspyDMT 
@@ -46,14 +45,14 @@ MY_CMD="obspyDMT
 --event_based 
 --instrument_correction
 --syngine 
---syngine_bg_model iasp91_2s"
+--syngine_bg_model ak135f_2s"
 
 echo "# Sample PBS for parallel jobs'" > "$datapath"_submit.pbs
 echo "#PBS -A lsa_flux"                >>"$datapath"_submit.pbs
 echo "#PBS -q flux"                    >>"$datapath"_submit.pbs
 echo "#PBS -l qos=flux"                >>"$datapath"_submit.pbs
 echo "#PBS -N $datapath"               >>"$datapath"_submit.pbs
-echo "#PBS -l nodes=1:ppn=8,pmem=4gb,walltime=100:00:00">>"$datapath"_submit.pbs
+echo "#PBS -l nodes=1:ppn=8,pmem=4gb,walltime=200:00:00">>"$datapath"_submit.pbs
 echo "#PBS -d ."                       >>"$datapath"_submit.pbs
 echo "#PBS -m n"                       >>"$datapath"_submit.pbs
 echo "#PBS -V"                         >>"$datapath"_submit.pbs
