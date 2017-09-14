@@ -19,7 +19,8 @@ import obspy
 from sys import argv
 
 def main():
-    stz,stn,ste = read_stream(argv[1]+'/processed/')
+    os.mkdir('pre_processed_clean')
+    stz,stn,ste = read_stream('processed/')
     stz = interpolate_filter(stz)
     ste = interpolate_filter(ste)
     stn = interpolate_filter(stn)
@@ -31,10 +32,9 @@ def main():
     stn = set_az_gcarc(stn)
     ste = set_az_gcarc(ste)
     r,t = obspy_rotate_ne_rt(stn,ste)
-    os.mkdir(argv[1]+'/pre_processed_clean')
-    r.write(argv[1]+'/pre_processed_clean/R.sac',format='SAC')
-    t.write(argv[1]+'/pre_processed_clean/T.sac',format='SAC')
-    stz.write(argv[1]+'/pre_processed_clean/Z.sac',format='SAC')
+    r.write('pre_processed_clean/R.sac',format='SAC')
+    t.write('pre_processed_clean/T.sac',format='SAC')
+    stz.write('pre_processed_clean/Z.sac',format='SAC')
 
 def obspy_rotate_ne_rt(stn,ste):
     str = stn.copy()

@@ -1,0 +1,200 @@
+#!/home/samhaug/anaconda2/bin/python
+
+'''
+==============================================================================
+
+File Name : travel_time_compute.py
+Purpose : Measure and record traveltime delays
+Creation Date : 12-09-2017
+Last Modified : Thu 14 Sep 2017 03:35:19 PM EDT
+Created By : Samuel M. Haugland
+
+==============================================================================
+'''
+
+import numpy as np
+from subprocess import call
+from os import listdir,getcwd
+from matplotlib import pyplot as plt
+import obspy
+from scipy.signal import correlate,butter,freqs
+import argparse
+from obspy.taup import TauPyModel
+model = TauPyModel(model='prem')
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Measure and record traveltime delays')
+    parser.add_argument('-p','--phase',metavar='N',type=str,help='Name of phase')
+    parser.add_argument('-w','--window',default=30,type=int,help='Half of the window length')
+    parser.add_argument('--fmin',default=1./100,type=float,help='Minimum frequency')
+    parser.add_argument('--fmax',default=1./5,type=float,help='Maximum frequency')
+    parser.add_argument('-d','--data',type=str,help='Path to data pickle')
+    parser.add_argument('-s','--synth',type=str,help='Path to synthetic pickle')
+    parser.add_argument('--stride',default=1,type=int,help='Use every Nth trace in stream')
+    parser.add_argument('--plot',dest='plot',action='store_true',help='Plot waveforms')
+    args = parser.parse_args()
+    welcome_message(args)
+    fname = write_header(args.phase)
+    branch_list = phase_info(args.phase)
+    write_branch(fname,branch_list)
+    write_f_resp(fname,args.fmin,args.fmax)
+
+    std,sts = read_streams(args.data,args.synth)
+    std,sts = phase_range(std,sts,args.phase)
+    std.filter('bandpass',freqmin=args.fmin,freqmax=args.fmax,zerophase=True).normalize()
+    sts.filter('bandpass',freqmin=args.fmin,freqmax=args.fmax,zerophase=True).normalize()
+    for ii in range(0,len(std),args.stride):
+        tobs,corcoeft=find_ttime(std[ii],sts[ii],[args.phase],
+                                 (-1*args.window,args.window),args.plot)
+        write_traveltime(fname,std[ii],1.0,tobs,corcoeft,1.0,args.window,1.0)
+
+def welcome_message(args):
+    print('#######################################')
+    print('Computing and recording traveltime delays')
+    print('#######################################')
+    print 'Data file: ',args.data
+    print 'Synthetic file: ',args.synth
+    print 'Measuring delay of phase ',args.synth
+    print 'Phase window is {} seconds long'.format(2*args.window)
+    print 'Butterworth filter from {} Hz to {} Hz'.format(args.fmin,args.fmax)
+    print 'Using every {} traces'.format(args.stride)
+    if args.plot:
+        print('Plotting is on')
+    if args.plot != True:
+        print('Plotting is off')
+    print('#######################################')
+
+def find_ttime(data_tr,synth_tr,phase,window_tuple,plot):
+    samp = data_tr.stats.sampling_rate
+    d_o = data_tr.stats.sac['o']
+    d_st = data_tr.stats.starttime
+    s_o = synth_tr.stats.sac['o']
+    s_st = synth_tr.stats.starttime
+    time = model.get_travel_times(source_depth_in_km=data_tr.stats.sac['evdp'],
+                                  distance_in_degree=data_tr.stats.sac['gcarc'],
+                                  phase_list=phase)[0].time
+    d = data_tr.slice(d_st+time+d_o+window_tuple[0],d_st+time+d_o+window_tuple[1]).data
+    s = synth_tr.slice(s_st+time+s_o+window_tuple[0],s_st+time+s_o+window_tuple[1]).data
+    tobs = (len(d)/2.-np.argmax(correlate(s,d,mode='same')))/samp+time
+    corcoeft = np.max(correlate(s,d,mode='same'))
+    if plot == True:
+        t = np.linspace(window_tuple[0],window_tuple[1],num=len(d))
+        fig,ax = plt.subplots()
+        ax.plot(t,d,color='k')
+        ax.plot(t,s,color='r')
+        ax.plot(t,np.roll(s,int(samp*(tobs-time))),color='r',ls='--')
+        ax.set_xlabel('Time (s)')
+        plt.show()
+    return tobs,corcoeft
+
+def read_streams(data_pickle,synth_pickle):
+    sts = obspy.read(synth_pickle)
+    std = obspy.read(data_pickle)
+    sts.sort(['station'])
+    std.sort(['station'])
+    sts.interpolate(10)
+    std.interpolate(10)
+    return std,sts
+
+def write_traveltime(fname,tr,tsig,tobs,corcoeft,nbt,xcl,tincore):
+    idate=str(tr.stats.starttime.year)[-2::]+'%03d'%tr.stats.starttime.day
+    iotime='%02d%02d%02d'%(tr.stats.starttime.hour,
+                           tr.stats.starttime.minute,
+                           tr.stats.starttime.second)
+    ievt='1'
+    kluster='0'
+    stationcode=tr.stats.station
+    netw=tr.stats.network
+    comp=tr.stats.channel
+    slat=tr.stats.sac['evla']
+    slon=tr.stats.sac['evla']
+    sdep=tr.stats.sac['evdp']
+    rlat=tr.stats.sac['stla']
+    rlon=tr.stats.sac['stla']
+    relev=0
+    nobst=1
+    nobsa=0
+    #number of polar crossings
+    kpole=0
+    line_2 = '1 0 00\n'
+    line_3 = '1\n'
+    line_5 = '0\n'
+    with open(fname,'a') as f:
+        f.write('{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\n'.format(
+                str(idate),
+                str(iotime),
+                str(ievt),
+                str(kluster),
+                stationcode,
+                netw,
+                comp,
+                str(slat),
+                str(slon),
+                str(sdep),
+                str(rlat),
+                str(rlon),
+                str(relev),
+                str(nobst),
+                str(nobsa),
+                str(kpole),
+                ))
+        f.write(line_2)
+        f.write(line_3)
+        f.write('{} {} {} {} {} {}\n'.format(
+                 str(tobs),
+                 str(tsig),
+                 str(corcoeft),
+                 str(nbt),
+                 str(xcl),
+                 str(tincore)))
+        f.write(line_5)
+
+def write_header(phase_name):
+    fname = getcwd().split('/')[-1]+'_'+phase_name
+    with open(fname,'w') as f:
+        f.write(fname+'\n')
+        f.write('None\n')
+    return fname
+
+def write_f_resp(fname,fmin,fmax):
+    fmin *= 2*np.pi
+    fmax *= 2*np.pi
+    b,a = butter(4,(fmin,fmax),'bandpass',analog=True)
+    w,h = freqs(b, a)
+    w = np.round(w,5)
+    h = np.abs(np.round(w,5))
+    freq_resp = np.hstack((np.transpose([w]),np.transpose([h])))
+    with open(fname,'a') as f:
+        f.write('1\n')
+        f.write('{}\n'.format(len(w)))
+        np.savetxt(f,freq_resp)
+
+def write_branch(fname,branch_list):
+    with open(fname,'a') as f:
+        for ii in branch_list:
+            f.write(ii+'\n')
+
+def phase_info(phase_name):
+    if phase_name == 'S':
+        branch_list = ['S','S','6371 1 2','3482 2 2','6371 5 0']
+    else:
+        print('Phase name first argument')
+    return branch_list
+
+def phase_range(std,sts,phase_name):
+    if phase_name == 'S':
+        for tr in std:
+            if tr.stats.sac['gcarc'] > 95.:
+                std.remove(tr)
+            if tr.stats.sac['gcarc'] < 5.:
+                std.remove(tr)
+        for tr in sts:
+            if tr.stats.sac['gcarc'] > 95.:
+                sts.remove(tr)
+            if tr.stats.sac['gcarc'] < 5.:
+                sts.remove(tr)
+
+    return std,sts
+
+main()
