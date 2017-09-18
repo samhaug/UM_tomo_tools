@@ -55,8 +55,7 @@ def simple_section(st,**kwargs):
         alpha = kwargs.get('alpha',0.5)
         e = tr.stats.npts/tr.stats.sampling_rate
         t = np.linspace(o,o+e,num=tr.stats.npts)
-
-        ax.plot(t,tr.data+tr.stats.sac[mode],alpha=alpha,
+        ax.plot(t,(tr.data/tr.data.max())+tr.stats.sac[mode],alpha=alpha,
                 color=color,label=tr.stats.network+'.'+tr.stats.station,
                 picker=10)
 
@@ -116,7 +115,7 @@ def simple_section(st,**kwargs):
 
 def read_stream(dirname):
     stt = obspy.read(dirname+'/st_T.pk')
-    stt.interpolate(10).normalize()
+    stt.interpolate(10)
     return stt
 
 main()
