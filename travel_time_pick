@@ -243,7 +243,6 @@ def phase_range(std,sts,phase_name):
                 sts.remove(tr)
             if tr.stats.sac['gcarc'] < 40.:
                 sts.remove(tr)
-
     return std,sts
 
 def write_amp_header(phase_name,fmin,fmax):

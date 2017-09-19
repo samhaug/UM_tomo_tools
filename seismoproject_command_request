@@ -33,7 +33,7 @@ MY_CMD="obspyDMT
 --offset $offset
 --min_mag $min_mag
 --max_mag $max_mag
---cha $cha
+--cha \"$cha\"
 --min_epi=$min_epi
 --max_epi=$max_epi
  --waveform_format $waveform_format
