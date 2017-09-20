@@ -182,7 +182,7 @@ def write_f_resp(fname,fmin,fmax):
     with open(fname,'a') as f:
         f.write('1\n')
         f.write('{}\n'.format(len(w)))
-        np.savetxt(f,freq_resp)
+        np.savetxt(f,freq_resp,fmt='%1.7f')
 
 def write_branch(fname,branch_list):
     with open(fname,'a') as f:

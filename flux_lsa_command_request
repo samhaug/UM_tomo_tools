@@ -40,7 +40,6 @@ MY_CMD="obspyDMT
 --event_catalog $event_catalog
 --req_parallel --req_np 8
 --parallel_process --process_np 8
---bulk
 --event_based 
 --instrument_correction
 --syngine 
