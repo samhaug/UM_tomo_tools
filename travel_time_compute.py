@@ -6,14 +6,13 @@
 File Name : travel_time_compute.py
 Purpose : Measure and record traveltime delays
 Creation Date : 12-09-2017
-Last Modified : Sun 24 Sep 2017 04:04:07 PM EDT
+Last Modified : Sun 24 Sep 2017 05:50:33 PM EDT
 Created By : Samuel M. Haugland
 
 ==============================================================================
 '''
 
-import numpy as np
-from subprocess import call
+from numpy import round,argmax,max,abs,linspace,roll,pi,hstack,transpose,savetxt
 from os import listdir,getcwd
 from matplotlib import pyplot as plt
 import obspy
@@ -57,7 +56,7 @@ def main():
     now = time.time()
     for idx,ii in enumerate(range(0,len(std),args.stride)):
         total = len(range(0,len(std),args.stride))
-        print '{}%'.format(np.round(float(idx)/total*100.))
+        print '{}%'.format(round(float(idx)/total*100.))
         tobs,corcoeft,m1,m2,s_amp,d_amp,del_t,key=find_ttime(
                                        std[ii],sts[ii],[args.phase],
                                        (-1*args.window,args.window),args.plot)
@@ -103,14 +102,14 @@ def find_ttime(data_tr,synth_tr,phase,window_tuple,plot):
                       d_st+time+d_o+window_tuple[1]).data
     s = synth_tr.slice(s_st+time+s_o+window_tuple[0],
                        s_st+time+s_o+window_tuple[1]).data
-    tobs = (len(d)/2.-np.argmax(correlate(s,d,mode='same')))/samp+time
-    tobs = np.round(tobs,2)
-    m1 = np.round(np.max(correlate(d,s))/np.max(correlate(s,s)),3)
-    m2 = np.round(np.max(correlate(d,d))/np.max(correlate(d,s)),3)
-    corcoeft = np.round(1-(m2-m1),3)
-    s_amp = np.round(np.max(np.abs(s)),1)
-    d_amp = np.round(np.max(np.abs(d)),1)
-    del_t = np.round(tobs-time,2)
+    tobs = (len(d)/2.-argmax(correlate(s,d,mode='same')))/samp+time
+    tobs = round(tobs,2)
+    m1 = round(max(correlate(d,s))/max(correlate(s,s)),3)
+    m2 = round(max(correlate(d,d))/max(correlate(d,s)),3)
+    corcoeft = round(1-(m2-m1),3)
+    s_amp = round(max(abs(s)),1)
+    d_amp = round(max(abs(d)),1)
+    del_t = round(tobs-time,2)
 
     if plot == True:
         class ClickSelect(object):
@@ -125,18 +124,18 @@ def find_ttime(data_tr,synth_tr,phase,window_tuple,plot):
 
         fig,ax = plt.subplots(2,1)
         plt.figtext(0.1,0.95,'press ctrl to save')
-        t = np.linspace(window_tuple[0],window_tuple[1],num=len(d))
-        td_full = np.linspace(0,data_tr.stats.endtime-data_tr.stats.starttime,num=data_tr.stats.npts)
-        ts_full = np.linspace(0,data_tr.stats.endtime-data_tr.stats.starttime,num=synth_tr.stats.npts)
+        t = linspace(window_tuple[0],window_tuple[1],num=len(d))
+        td_full = linspace(0,data_tr.stats.endtime-data_tr.stats.starttime,num=data_tr.stats.npts)
+        ts_full = linspace(0,data_tr.stats.endtime-data_tr.stats.starttime,num=synth_tr.stats.npts)
         ax[1].plot(td_full,data_tr.data/data_tr.data.max(),color='k')
         ax[1].plot(ts_full,synth_tr.data/synth_tr.data.max()+1,color='r')
         ax[1].set_xlim(time+synth_tr.stats.sac['o']-200,time+synth_tr.stats.sac['o']+200)
         ax[1].set_ylim(-1.5,2.5)
         ax[0].plot(t,d,color='k')
         ax[0].plot(t,s,color='r')
-        ax[0].plot(t,np.roll(s,int(samp*(del_t))),color='r',ls='--')
-        ax[0].plot(t,np.roll(s,int(samp*(del_t+1))),color='b',ls='--',alpha=0.3)
-        ax[0].plot(t,np.roll(s,int(samp*(del_t-1))),color='g',ls='--',alpha=0.3)
+        ax[0].plot(t,roll(s,int(samp*(del_t))),color='r',ls='--')
+        ax[0].plot(t,roll(s,int(samp*(del_t+1))),color='b',ls='--',alpha=0.3)
+        ax[0].plot(t,roll(s,int(samp*(del_t-1))),color='g',ls='--',alpha=0.3)
         ax[0].set_xlabel('Time (s)')
         ax[0].set_title('M1:{} \nM2:{} \ndel_t:{} \ndel_amp:{}\n gcarc:{}'.format(
                      str(m1),str(m2),str(del_t),str(s_amp-d_amp),
@@ -164,11 +163,11 @@ def write_traveltime(fname,tr,tsig,tobs,corcoeft,nbt,xcl,tincore):
     stationcode=tr.stats.station
     netw=tr.stats.network
     comp=tr.stats.channel
-    slat=np.round(tr.stats.sac['evla'],2)
-    slon=np.round(tr.stats.sac['evlo'],2)
-    sdep=np.round(tr.stats.sac['evdp'],2)
-    rlat=np.round(tr.stats.sac['stla'],2)
-    rlon=np.round(tr.stats.sac['stlo'],2)
+    slat=round(tr.stats.sac['evla'],2)
+    slon=round(tr.stats.sac['evlo'],2)
+    sdep=round(tr.stats.sac['evdp'],2)
+    rlat=round(tr.stats.sac['stla'],2)
+    rlon=round(tr.stats.sac['stlo'],2)
     relev=0.0
     nobst=1
     nobsa=0
@@ -217,17 +216,17 @@ def write_header(phase_name,args):
     return fname
 
 def write_f_resp(fname,fmin,fmax):
-    fmin *= 2*np.pi
-    fmax *= 2*np.pi
+    fmin *= 2*pi
+    fmax *= 2*pi
     b,a = butter(4,(fmin,fmax),'bandpass',analog=True)
     w,h = freqs(b, a)
-    w = np.round(w,5)
-    h = np.abs(np.round(h,5))
-    freq_resp = np.hstack((np.transpose([w]),np.transpose([h])))
+    w = round(w,5)
+    h = abs(round(h,5))
+    freq_resp = hstack((transpose([w]),transpose([h])))
     with open(fname,'a') as f:
         f.write('1\n')
         f.write('{}\n'.format(len(w)))
-        np.savetxt(f,freq_resp,fmt='%1.7f')
+        savetxt(f,freq_resp,fmt='%1.7f')
 
 def write_branch(fname,branch_list):
     with open(fname,'a') as f:
@@ -323,11 +322,11 @@ def write_amplitude(fname,tr,tsig,tobs,corcoeft,m1,m2,s_amp,d_amp,del_t):
     stationcode=tr.stats.station
     netw=tr.stats.network
     comp=tr.stats.channel
-    slat=np.round(tr.stats.sac['evla'],2)
-    slon=np.round(tr.stats.sac['evlo'],2)
-    sdep=np.round(tr.stats.sac['evdp'],2)
-    rlat=np.round(tr.stats.sac['stla'],2)
-    rlon=np.round(tr.stats.sac['stlo'],2)
+    slat=round(tr.stats.sac['evla'],2)
+    slon=round(tr.stats.sac['evlo'],2)
+    sdep=round(tr.stats.sac['evdp'],2)
+    rlat=round(tr.stats.sac['stla'],2)
+    rlon=round(tr.stats.sac['stlo'],2)
     relev=0
     #number of polar crossings
     line_2 = '1 0 00\n'
