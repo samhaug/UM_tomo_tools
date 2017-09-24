@@ -43,8 +43,8 @@ def obspy_rotate_ne_rt(stn,ste):
         ba = ste[idx].stats.sac['baz']
         e = ste[idx].data
         n = stn[idx].data
-        r = e*np.sin((ba+180)*2*np.pi/360)+n*np.cos((ba + 180)*2*np.pi/360)
-        t = e*np.cos((ba+180)*2*np.pi/360)-n*np.sin((ba + 180)*2*np.pi/360)
+        r = e*np.sin((ba+180)*2*np.pi/360)+n*np.cos((ba+180)*2*np.pi/360)
+        t = e*np.cos((ba+180)*2*np.pi/360)-n*np.sin((ba+180)*2*np.pi/360)
 	str[idx].data = r
 	str[idx].stats.channel = 'R'
 	stt[idx].data = t
@@ -69,10 +69,16 @@ def station_list_filter(stz,ste,stn):
     stat_list_n = []
     for tr in stz:
         stat_list_z.append(tr.stats.station+tr.stats.network)
+        if tr.stats.station+tr.stats.network in stat_list_z:
+            stz.remove(tr)
     for tr in stn:
         stat_list_n.append(tr.stats.station+tr.stats.network)
+        if tr.stats.station+tr.stats.network in stat_list_n:
+            stn.remove(tr)
     for tr in ste:
         stat_list_e.append(tr.stats.station+tr.stats.network)
+        if tr.stats.station+tr.stats.network in stat_list_e:
+            ste.remove(tr)
     I = list(set(stat_list_e).intersection(set(stat_list_n)).intersection(set(stat_list_z)))
     for tr in stz:
         if tr.stats.station+tr.stats.network not in I:
