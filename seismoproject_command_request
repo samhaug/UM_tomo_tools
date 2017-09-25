@@ -6,9 +6,18 @@
 #
 #
 
-datapath=$1
-min_date=$datapath-01-01
-max_date=$(($datapath+1))-01-01
+date=$1
+
+if [ $2 == 1 ]; then
+    echo 'first half'
+    min_date=$date-01-01
+    max_date=$date-06-01
+elif [ $2 == 2 ]; then
+    echo 'second half'
+    min_date=$date-06-01
+    max_date=$(($date+1))-01-01
+fi
+
 min_depth=10
 max_depth=700
 #cut_time_phase='P'
@@ -18,10 +27,12 @@ waveform_format='sac'
 event_catalog='IRIS'
 min_mag='6.0'
 max_mag='7.0'
-cha='BH*,HH*'
+cha='BHE,BHN,BHZ,HHE,HHN,HHZ'
 min_epi=10
 max_epi=175
 
+datapath=$date"_"$2
+echo $datapath
 #--cut_time_phase $cut_time_phase
 MY_CMD="obspyDMT 
 --datapath $datapath
@@ -46,8 +57,8 @@ MY_CMD="obspyDMT
 --syngine_bg_model iasp91_2s"
 
 echo "# Sample PBS for parallel jobs'" > "$datapath"_submit.pbs
-echo "#PBS -A seismoproject_fluxod"    >>"$datapath"_submit.pbs
-echo "#PBS -q fluxod"                  >>"$datapath"_submit.pbs
+echo "#PBS -A seismoproject_fluxod"                >>"$datapath"_submit.pbs
+echo "#PBS -q fluxod"                    >>"$datapath"_submit.pbs
 echo "#PBS -l qos=flux"                >>"$datapath"_submit.pbs
 echo "#PBS -N $datapath"               >>"$datapath"_submit.pbs
 echo "#PBS -l nodes=1:ppn=8,pmem=4gb,walltime=200:00:00">>"$datapath"_submit.pbs

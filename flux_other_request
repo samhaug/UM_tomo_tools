@@ -29,11 +29,11 @@ waveform_format='sac'
 event_catalog='IRIS'
 min_mag='6.0'
 max_mag='7.0'
-cha='BHZ,BHE,BHN,HHE,HHN,HHZ'
+cha='BH1,BH2,HH1,HH2'
 min_epi=10
 max_epi=175
 
-datapath=$date"_"$2
+datapath=$date"_"$2"_"other
 echo $datapath
 #--cut_time_phase $cut_time_phase
 MY_CMD="obspyDMT 
