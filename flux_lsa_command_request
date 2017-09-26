@@ -31,7 +31,7 @@ min_mag='6.0'
 max_mag='7.0'
 cha='BHZ,BHE,BHN,HHE,HHN,HHZ'
 min_epi=10
-max_epi=175
+max_epi=180
 
 datapath=$date"_"$2
 echo $datapath
